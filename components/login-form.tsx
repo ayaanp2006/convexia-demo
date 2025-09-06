@@ -35,19 +35,19 @@ export function LoginForm() {
   }
 
   return (
-    <Card className="w-full max-w-md bg-card/95 backdrop-blur-sm border-border/50 rounded-2xl">
+    <Card className="w-full max-w-md bg-slate-900/95 backdrop-blur-sm border-emerald-500/20 rounded-2xl shadow-2xl shadow-emerald-500/10">
       <CardHeader className="space-y-6 text-center">
         <div className="flex items-center justify-center gap-3">
-          <Image src="/convexia-logo.jpg" alt="Convexia" width={32} height={32} className="w-8 h-8" />
-          <span className="text-2xl font-semibold tracking-tight text-foreground">Convexia</span>
+          <Image src="/convexia-logo.png" alt="Convexia" width={32} height={32} className="w-8 h-8" />
+          <span className="text-2xl font-semibold tracking-tight text-white">Convexia</span>
         </div>
-        <CardTitle className="text-2xl font-semibold tracking-tight">Sign in</CardTitle>
+        <CardTitle className="text-2xl font-semibold tracking-tight text-white">Sign in</CardTitle>
       </CardHeader>
       <CardContent>
         <form action={handleSubmit} className="space-y-6">
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username" className="text-sm font-medium">
+              <Label htmlFor="username" className="text-sm font-medium text-gray-200">
                 Username
               </Label>
               <Input
@@ -56,12 +56,12 @@ export function LoginForm() {
                 type="text"
                 placeholder="Enter username"
                 required
-                className={`transition-colors ${error ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                className={`bg-slate-800/50 border-slate-700 text-white placeholder:text-gray-400 focus:border-emerald-500 focus:ring-emerald-500/20 transition-colors ${error ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                 aria-describedby={error ? "error-message" : undefined}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm font-medium">
+              <Label htmlFor="password" className="text-sm font-medium text-gray-200">
                 Password
               </Label>
               <Input
@@ -70,7 +70,7 @@ export function LoginForm() {
                 type="password"
                 placeholder="Enter password"
                 required
-                className={`transition-colors ${error ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                className={`bg-slate-800/50 border-slate-700 text-white placeholder:text-gray-400 focus:border-emerald-500 focus:ring-emerald-500/20 transition-colors ${error ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                 aria-describedby={error ? "error-message" : undefined}
               />
             </div>
@@ -79,7 +79,7 @@ export function LoginForm() {
           {error && (
             <div
               id="error-message"
-              className="text-sm text-red-500 bg-red-50 dark:bg-red-950/50 p-3 rounded-lg border border-red-200 dark:border-red-800"
+              className="text-sm text-red-400 bg-red-950/50 p-3 rounded-lg border border-red-800/50"
               role="alert"
               aria-live="polite"
             >
@@ -88,11 +88,6 @@ export function LoginForm() {
           )}
 
           <SubmitButton />
-
-          <p className="text-sm text-muted-foreground text-center leading-relaxed">
-            Use username <strong className="text-foreground">demo</strong> and password{" "}
-            <strong className="text-foreground">demo</strong>.
-          </p>
         </form>
       </CardContent>
     </Card>

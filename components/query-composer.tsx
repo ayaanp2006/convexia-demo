@@ -134,7 +134,7 @@ export function QueryComposer() {
     <Card className="bg-card/95 backdrop-blur-sm border-border/50 rounded-2xl">
       <CardHeader className="space-y-4">
         <div className="flex items-center gap-3">
-          <Image src="/convexia-logo.jpg" alt="Convexia" width={24} height={24} className="w-6 h-6" />
+          <Image src="/convexia-logo.png" alt="Convexia" width={24} height={24} className="w-6 h-6" />
           <CardTitle className="text-2xl font-semibold tracking-tight">Query Composer</CardTitle>
         </div>
         <div className="flex items-center gap-2">
