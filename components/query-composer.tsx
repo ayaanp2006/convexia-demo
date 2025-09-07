@@ -143,10 +143,9 @@ export function QueryComposer() {
     const result = await saveQuery(formData)
 
     if (result.success) {
-      const timestamp = new Date().toLocaleTimeString()
       toast({
-        title: "Saved to Convexia",
-        description: `Query saved at ${timestamp}`,
+        title: "Success!",
+        description: "Your query has been submitted. You'll receive the final report via email within 18-36 hours.",
       })
 
       // Clear draft and reload recent queries
@@ -216,6 +215,11 @@ export function QueryComposer() {
             <HelpCircle className="h-4 w-4" />
             <span className="sr-only">How to write a great query</span>
           </Button>
+        </div>
+        <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+          <p className="text-sm text-amber-800 dark:text-amber-200">
+            <strong>Demo Mode:</strong> This is a demonstration version. Queries are saved but no actual reports will be generated.
+          </p>
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -344,7 +348,7 @@ export function QueryComposer() {
                 id="additionalInfo"
                 value={additionalInfo}
                 onChange={(e) => setAdditionalInfo(e.target.value)}
-                placeholder="Any additional context, specific requirements, or detailed criteria..."
+                placeholder="Be as specific or narrow as you want. Include any additional context, specific requirements, detailed criteria, or constraints..."
                 className="min-h-24 resize-none transition-colors"
               />
             </div>
