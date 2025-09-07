@@ -17,6 +17,7 @@ export async function saveQuery(formData: FormData): Promise<QueryResult> {
 
     const queryText = formData.get("query") as string
     const facets = formData.get("facets") as string
+    const email = formData.get("email") as string
 
     if (!queryText) {
       return {
@@ -32,12 +33,20 @@ export async function saveQuery(formData: FormData): Promise<QueryResult> {
       }
     }
 
+    if (!email) {
+      return {
+        success: false,
+        error: "Email is required",
+      }
+    }
+
     const supabase = await createClient()
 
     const { data, error } = await supabase
       .from("queries")
       .insert({
         user_id: DEMO_USER_ID,
+        email,
         facets: facets || "",
         query_text: queryText,
       })
@@ -65,18 +74,22 @@ export async function saveQuery(formData: FormData): Promise<QueryResult> {
   }
 }
 
-export async function getRecentQueries(): Promise<QueryResult> {
+export async function getRecentQueries(email?: string): Promise<QueryResult> {
   try {
     await requireAuth()
 
     const supabase = await createClient()
 
-    const { data, error } = await supabase
+    // If an email is provided, filter by it; otherwise default to demo user_id
+    const query = supabase
       .from("queries")
       .select("*")
-      .eq("user_id", DEMO_USER_ID)
       .order("created_at", { ascending: false })
       .limit(5)
+
+    const builder = email && email.trim().length > 0 ? query.eq("email", email) : query.eq("user_id", DEMO_USER_ID)
+
+    const { data, error } = await builder
 
     if (error) {
       console.error("[v0] Supabase error:", error)

@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 import { HelpCircle, RotateCcw } from "lucide-react"
 import Image from "next/image"
@@ -33,7 +34,14 @@ interface Query {
 
 export function QueryComposer() {
   const [email, setEmail] = useState("")
-  const [query, setQuery] = useState("")
+  const [target, setTarget] = useState("")
+  const [indication, setIndication] = useState("")
+  const [modality, setModality] = useState("")
+  const [geography, setGeography] = useState("")
+  const [stage, setStage] = useState("")
+  const [exclusions, setExclusions] = useState("")
+  const [timeWindow, setTimeWindow] = useState("")
+  const [additionalInfo, setAdditionalInfo] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [recentQueries, setRecentQueries] = useState<Query[]>([])
   const [isLoadingRecent, setIsLoadingRecent] = useState(false)
@@ -41,26 +49,50 @@ export function QueryComposer() {
 
   // Load draft from localStorage
   useEffect(() => {
-    const savedDraft = localStorage.getItem(`convexia_draft_${email}`)
-    if (savedDraft && email) {
-      setQuery(savedDraft)
+    if (email) {
+      const savedDraft = localStorage.getItem(`convexia_draft_${email}`)
+      if (savedDraft) {
+        try {
+          const draft = JSON.parse(savedDraft)
+          setTarget(draft.target || "")
+          setIndication(draft.indication || "")
+          setModality(draft.modality || "")
+          setGeography(draft.geography || "")
+          setStage(draft.stage || "")
+          setExclusions(draft.exclusions || "")
+          setTimeWindow(draft.timeWindow || "")
+          setAdditionalInfo(draft.additionalInfo || "")
+        } catch {
+          // Ignore invalid JSON
+        }
+      }
     }
   }, [email])
 
   // Save draft to localStorage
   useEffect(() => {
-    if (email && query) {
-      localStorage.setItem(`convexia_draft_${email}`, query)
+    if (email) {
+      const draft = {
+        target,
+        indication,
+        modality,
+        geography,
+        stage,
+        exclusions,
+        timeWindow,
+        additionalInfo
+      }
+      localStorage.setItem(`convexia_draft_${email}`, JSON.stringify(draft))
     }
-  }, [email, query])
+  }, [email, target, indication, modality, geography, stage, exclusions, timeWindow, additionalInfo])
 
   useEffect(() => {
     loadRecentQueries()
-  }, [])
+  }, [email])
 
   const loadRecentQueries = async () => {
     setIsLoadingRecent(true)
-    const result = await getRecentQueries()
+    const result = await getRecentQueries(email)
 
     if (result.success) {
       setRecentQueries(result.data || [])
@@ -72,16 +104,41 @@ export function QueryComposer() {
   }
 
   const handleExampleClick = (exampleQuery: string) => {
-    setQuery(exampleQuery)
+    // Parse example query and populate fields
+    // For now, just put it in additional info
+    setAdditionalInfo(exampleQuery)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
 
+    // Build structured query text
+    const queryParts = []
+    if (target) queryParts.push(`Target: ${target}`)
+    if (indication) queryParts.push(`Indication: ${indication}`)
+    if (modality) queryParts.push(`Modality: ${modality}`)
+    if (geography) queryParts.push(`Geography: ${geography}`)
+    if (stage) queryParts.push(`Stage: ${stage}`)
+    if (exclusions) queryParts.push(`Exclusions: ${exclusions}`)
+    if (timeWindow) queryParts.push(`Time window: ${timeWindow}`)
+    if (additionalInfo) queryParts.push(`Additional information: ${additionalInfo}`)
+    
+    const queryText = queryParts.join("; ")
+
     const formData = new FormData()
-    formData.append("query", query)
-    formData.append("facets", "")
+    formData.append("query", queryText)
+    formData.append("facets", JSON.stringify({
+      target,
+      indication,
+      modality,
+      geography,
+      stage,
+      exclusions,
+      timeWindow,
+      additionalInfo
+    }))
+    formData.append("email", email)
 
     const result = await saveQuery(formData)
 
@@ -94,6 +151,14 @@ export function QueryComposer() {
 
       // Clear draft and reload recent queries
       localStorage.removeItem(`convexia_draft_${email}`)
+      setTarget("")
+      setIndication("")
+      setModality("")
+      setGeography("")
+      setStage("")
+      setExclusions("")
+      setTimeWindow("")
+      setAdditionalInfo("")
       await loadRecentQueries()
     } else {
       toast({
@@ -107,14 +172,22 @@ export function QueryComposer() {
   }
 
   const handleClear = () => {
-    setQuery("")
+    setTarget("")
+    setIndication("")
+    setModality("")
+    setGeography("")
+    setStage("")
+    setExclusions("")
+    setTimeWindow("")
+    setAdditionalInfo("")
     if (email) {
       localStorage.removeItem(`convexia_draft_${email}`)
     }
   }
 
   const handleReuseQuery = (queryText: string) => {
-    setQuery(queryText)
+    // For now, put the reused query in additional info
+    setAdditionalInfo(queryText)
   }
 
   const formatQuerySnippet = (text: string) => {
@@ -164,52 +237,125 @@ export function QueryComposer() {
             <p className="text-xs text-muted-foreground">We'll associate saved queries with this email.</p>
           </div>
 
-          {/* Query Textarea */}
-          <div className="space-y-2">
-            <Label htmlFor="query" className="text-sm font-medium">
-              Your query
-            </Label>
-            <Textarea
-              id="query"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Find oral/small-molecule NaV1.8 programs in China at preclinical stage that fit 5AM Ventures' portfolio; exclude top-10 pharma unless optioned but unexercised; focus on the last 5 years."
-              className="min-h-32 resize-none transition-colors"
-              required
-            />
-            <div className="flex justify-between items-center">
-              <p className="text-xs text-muted-foreground">
-                {query.length >= 120 ? "✓" : "⚠"} {query.length} characters
-                {query.length < 120 && " (minimum 120)"}
-              </p>
+          {/* Structured Query Fields */}
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="target" className="text-sm font-medium">
+                  Target
+                </Label>
+                <Input
+                  id="target"
+                  value={target}
+                  onChange={(e) => setTarget(e.target.value)}
+                  placeholder="e.g., NaV1.8, TNF-α, GLP-1R"
+                  className="transition-colors"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="indication" className="text-sm font-medium">
+                  Indication
+                </Label>
+                <Input
+                  id="indication"
+                  value={indication}
+                  onChange={(e) => setIndication(e.target.value)}
+                  placeholder="e.g., neuropathic pain, inflammation"
+                  className="transition-colors"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="modality" className="text-sm font-medium">
+                  Modality
+                </Label>
+                <Input
+                  id="modality"
+                  value={modality}
+                  onChange={(e) => setModality(e.target.value)}
+                  placeholder="e.g., small-molecule, oral"
+                  className="transition-colors"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="geography" className="text-sm font-medium">
+                  Geography
+                </Label>
+                <Input
+                  id="geography"
+                  value={geography}
+                  onChange={(e) => setGeography(e.target.value)}
+                  placeholder="e.g., China, US, EU"
+                  className="transition-colors"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="stage" className="text-sm font-medium">
+                  Stage
+                </Label>
+                <Input
+                  id="stage"
+                  value={stage}
+                  onChange={(e) => setStage(e.target.value)}
+                  placeholder="e.g., preclinical, Phase 1"
+                  className="transition-colors"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="exclusions" className="text-sm font-medium">
+                  Exclusions
+                </Label>
+                <Input
+                  id="exclusions"
+                  value={exclusions}
+                  onChange={(e) => setExclusions(e.target.value)}
+                  placeholder="e.g., top-10 pharma, discontinued"
+                  className="transition-colors"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="timeWindow" className="text-sm font-medium">
+                  Time window
+                </Label>
+                <Select value={timeWindow} onValueChange={setTimeWindow}>
+                  <SelectTrigger className="transition-colors">
+                    <SelectValue placeholder="Select time window" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="last 2y">Last 2 years</SelectItem>
+                    <SelectItem value="last 5y">Last 5 years</SelectItem>
+                    <SelectItem value="last 7y">Last 7 years</SelectItem>
+                    <SelectItem value="any">Any time</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="additionalInfo" className="text-sm font-medium">
+                Additional information
+              </Label>
+              <Textarea
+                id="additionalInfo"
+                value={additionalInfo}
+                onChange={(e) => setAdditionalInfo(e.target.value)}
+                placeholder="Any additional context, specific requirements, or detailed criteria..."
+                className="min-h-24 resize-none transition-colors"
+              />
             </div>
           </div>
 
-          {/* Example Queries */}
-          <div className="space-y-3">
-            <Label className="text-sm font-medium">One-click examples</Label>
-            <div className="flex flex-wrap gap-2">
-              {EXAMPLE_QUERIES.map((example, index) => (
-                <Badge
-                  key={index}
-                  variant="secondary"
-                  className="cursor-pointer hover:bg-emerald-100 hover:text-emerald-800 dark:hover:bg-emerald-900/50 dark:hover:text-emerald-200 transition-colors text-xs py-1 px-2 max-w-xs truncate"
-                  onClick={() => handleExampleClick(example)}
-                  title={example}
-                >
-                  Example {index + 1}
-                </Badge>
-              ))}
-            </div>
-          </div>
-
-          <Separator />
 
           {/* Actions */}
           <div className="flex gap-3">
             <Button
               type="submit"
-              disabled={isLoading || !email || query.length < 120}
+              disabled={isLoading || !email}
               className="bg-emerald-600 hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-500/25 transition-all duration-200"
             >
               {isLoading ? "Submitting..." : "Submit to Convexia"}
@@ -262,6 +408,24 @@ export function QueryComposer() {
               ))}
             </div>
           )}
+        </div>
+
+        <Separator />
+
+        {/* Example Queries */}
+        <div className="space-y-3">
+          <Label className="text-sm font-medium">Example queries</Label>
+          <div className="space-y-2">
+            {EXAMPLE_QUERIES.map((example, index) => (
+              <div
+                key={index}
+                className="p-3 bg-muted/30 rounded-lg border border-border/30 cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={() => handleExampleClick(example)}
+              >
+                <p className="text-sm text-foreground">{example}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </CardContent>
     </Card>
